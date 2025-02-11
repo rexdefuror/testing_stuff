@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Callback - Test OIDC and API</title>
+  <script src="https://cdn.jsdelivr.net/npm/oidc-client@1.11.5/dist/oidc-client.min.js"></script>
+</head>
+<body>
+  <h1>Processing Callback...</h1>
+  <pre id="result"></pre>
+  <script>
+    // Retrieve configuration from localStorage.
+    const authority = localStorage.getItem('oidc.authority');
+    const clientId = localStorage.getItem('oidc.clientId');
+    const scope = localStorage.getItem('oidc.scope');
+    const redirectUri = window.location.href; // callback page URL
+
+    if (!authority || !clientId || !scope) {
+      document.getElementById('result').textContent = 'Missing OIDC configuration.';
+    } else {
+      const config = {
+        authority: authority,
+        client_id: clientId,
+        redirect_uri: redirectUri,
+        response_type: 'code',
+        scope: scope
+      };
+
+      const mgr = new Oidc.UserManager(config);
+
+      mgr.signinRedirectCallback().then(user => {
+        document.getElementById('result').textContent = JSON.stringify(user, null, 2);
+        // Optionally, redirect back to the main page after a short delay.
+        setTimeout(() => {
+          window.location.href = 'index.html';
+        }, 3000);
+      }).catch(err => {
+        document.getElementById('result').textContent = 'Error during signinRedirectCallback:\n' + err;
+      });
+    }
+  </script>
+</body>
+</html>

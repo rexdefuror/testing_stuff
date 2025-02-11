@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Test oauth and api</title>
+  <!-- Load oidc-client from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/oidc-client@1.11.5/dist/oidc-client.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .form-group {
+      margin-bottom: 1em;
+      width: 100%;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5em;
+      font-weight: bold;
+    }
+    input[type="text"],
+    input[type="password"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.5em;
+      font-size: 1em;
+      box-sizing: border-box;
+    }
+    button {
+      padding: 0.5em 1em;
+      font-size: 1em;
+      margin-top: 0.5em;
+    }
+    pre {
+      background: #f4f4f4;
+      padding: 1em;
+      overflow: auto;
+    }
+    /* New API Request section styling */
+    #apiRequestContainer {
+      margin-top: 2em;
+      border-top: 1px solid #ccc;
+      padding-top: 1em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Test</h1>
+  <div class="form-group">
+    <label for="authority">Authority:</label>
+    <input type="text" id="authority" placeholder="https://login.microsoftonline.com/{tenantId}" />
+  </div>
+  <div class="form-group">
+    <label for="clientId">Client ID:</label>
+    <input type="text" id="clientId" placeholder="Your Client ID" />
+  </div>
+  <div class="form-group">
+    <label for="clientSecret">Client Secret:</label>
+    <input type="password" id="clientSecret" placeholder="Your Client Secret (optional)" />
+  </div>
+  <div class="form-group">
+    <label for="redirectUri">Redirect URI:</label>
+    <input type="text" id="redirectUri" value="http://localhost:3000/callback" />
+  </div>
+  <div class="form-group">
+    <label for="scope">Scope:</label>
+    <input type="text" id="scope" placeholder="openid profile email" />
+  </div>
+  <button id="loginBtn">Login</button>
+  <h2>Result</h2>
+  <pre id="result"></pre>
+
+  <!-- New API Request Section -->
+  <div id="apiRequestContainer">
+    <h2>Call an Endpoint</h2>
+    <div class="form-group">
+      <label for="requestMethod">HTTP Method:</label>
+      <select id="requestMethod">
+        <option value="GET">GET</option>
+        <option value="POST">POST</option>
+        <option value="PUT">PUT</option>
+        <option value="DELETE">DELETE</option>
+        <option value="PATCH">PATCH</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="requestUrl">Request URL:</label>
+      <input type="text" id="requestUrl" placeholder="https://api.example.com/endpoint" />
+    </div>
+    <div class="form-group">
+      <label for="requestBody">JSON Body (for POST/PUT/PATCH):</label>
+      <textarea id="requestBody" rows="5" placeholder='{"key": "value"}'></textarea>
+    </div>
+    <button id="sendRequestBtn">Send Request</button>
+    <h2>API Response</h2>
+    <pre id="apiResponse"></pre>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
