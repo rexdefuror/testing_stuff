@@ -26,9 +26,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const params = new URLSearchParams(window.location.search);
     const callback = params.get('callback');
     if (callback) {
-      // We assume userManager is already created if a callback is present.
-      // (In a production app you might store the state in localStorage as well.)
-      if (userManager) {
+      // Re-create the UserManager from stored configuration.
+      let authority = document.getElementById('authority').value.trim();
+      const clientId = document.getElementById('clientId').value.trim();
+      const clientSecret = document.getElementById('clientSecret').value.trim();
+      const redirectUri = document.getElementById('redirectUri').value.trim();
+      const scope = document.getElementById('scope').value.trim();
+
+      if (authority && clientId && redirectUri && scope) {
+        if (!authority.endsWith('/v2.0')) {
+          authority += '/v2.0';
+        }
+        const config = {
+          authority: authority,
+          client_id: clientId,
+          redirect_uri: redirectUri,
+          response_type: 'code',
+          scope: scope
+        };
+        if (clientSecret) {
+          config.client_secret = clientSecret;
+        }
+        userManager = new Oidc.UserManager(config);
         userManager.signinRedirectCallback(callback).then(user => {
           accessToken = user.access_token;
           document.getElementById('result').textContent = 'User info:\n' + JSON.stringify(user, null, 2);
@@ -37,6 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }).catch(err => {
           document.getElementById('result').textContent = 'Error during signinRedirectCallback:\n' + err;
         });
+      } else {
+        document.getElementById('result').textContent = 'Missing stored configuration. Please log in again.';
       }
     }
   }
@@ -82,15 +103,13 @@ document.getElementById('loginBtn').addEventListener('click', () => {
   // Create a new UserManager instance with the configuration.
   userManager = new Oidc.UserManager(config);
 
-  // Create the signin URL and open it.
+  // Instead of calling signinRedirect(), create the signin URL and open it.
   userManager.createSigninRequest().then(response => {
     const signinUrl = response.url;
     if (isElectron) {
-      // (In Electron, you would use Electron's shell module.)
       const { shell } = require('electron');
       shell.openExternal(signinUrl);
     } else {
-      // In a plain browser, simply redirect.
       window.location.href = signinUrl;
     }
   }).catch(err => {
