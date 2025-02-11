@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Test oauth and api</title>
+  <title>OIDC Loopback Tester (Web Version)</title>
   <!-- Load oidc-client from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/oidc-client@1.11.5/dist/oidc-client.min.js"></script>
   <style>
@@ -47,7 +47,7 @@
   </style>
 </head>
 <body>
-  <h1>Test</h1>
+  <h1>OIDC Token Fetcher (Web Version)</h1>
   <div class="form-group">
     <label for="authority">Authority:</label>
     <input type="text" id="authority" placeholder="https://login.microsoftonline.com/{tenantId}" />
@@ -87,7 +87,7 @@
     </div>
     <div class="form-group">
       <label for="requestUrl">Request URL:</label>
-      <input type="text" id="requestUrl" placeholder="https://api.example.com/endpoint" />
+      <input type="text" id="requestUrl" placeholder="https://httpbin.org/anything" />
     </div>
     <div class="form-group">
       <label for="requestBody">JSON Body (for POST/PUT/PATCH):</label>

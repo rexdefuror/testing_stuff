@@ -1,7 +1,9 @@
 // public/renderer.js
-const { ipcRenderer, shell } = require('electron');
 
-// Global variable to hold the UserManager instance and access token.
+// Determine if running in Electron or in a plain browser.
+const isElectron = !!(window && window.process && window.process.type);
+
+// Global variables to hold the UserManager instance and access token.
 let userManager = null;
 let accessToken = null;
 
@@ -18,6 +20,26 @@ document.addEventListener('DOMContentLoaded', () => {
   if (storedClientSecret) document.getElementById('clientSecret').value = storedClientSecret;
   if (storedRedirectUri) document.getElementById('redirectUri').value = storedRedirectUri;
   if (storedScope) document.getElementById('scope').value = storedScope;
+
+  // In web mode, check if the URL contains a callback parameter.
+  if (!isElectron) {
+    const params = new URLSearchParams(window.location.search);
+    const callback = params.get('callback');
+    if (callback) {
+      // We assume userManager is already created if a callback is present.
+      // (In a production app you might store the state in localStorage as well.)
+      if (userManager) {
+        userManager.signinRedirectCallback(callback).then(user => {
+          accessToken = user.access_token;
+          document.getElementById('result').textContent = 'User info:\n' + JSON.stringify(user, null, 2);
+          // Remove the callback parameter from the URL.
+          window.history.replaceState({}, document.title, '/index.html');
+        }).catch(err => {
+          document.getElementById('result').textContent = 'Error during signinRedirectCallback:\n' + err;
+        });
+      }
+    }
+  }
 });
 
 document.getElementById('loginBtn').addEventListener('click', () => {
@@ -60,43 +82,23 @@ document.getElementById('loginBtn').addEventListener('click', () => {
   // Create a new UserManager instance with the configuration.
   userManager = new Oidc.UserManager(config);
 
-  console.log('localStorage keys before signin:', Object.keys(window.localStorage));
-
-  // Instead of calling signinRedirect(), create the signin URL and open it externally.
+  // Create the signin URL and open it.
   userManager.createSigninRequest().then(response => {
     const signinUrl = response.url;
-    console.log('Opening signin URL in external browser:', signinUrl);
-    shell.openExternal(signinUrl);
+    if (isElectron) {
+      // (In Electron, you would use Electron's shell module.)
+      const { shell } = require('electron');
+      shell.openExternal(signinUrl);
+    } else {
+      // In a plain browser, simply redirect.
+      window.location.href = signinUrl;
+    }
   }).catch(err => {
     document.getElementById('result').textContent = 'Error during createSigninRequest:\n' + err;
   });
 });
 
-// Listen for the callback URL sent from the Express server.
-ipcRenderer.on('oidc-callback', (event, callbackUrl) => {
-  console.log('Callback URL received in renderer:', callbackUrl);
-  document.getElementById('result').textContent = 'Received callback URL:\n' + callbackUrl;
-
-  if (!userManager) {
-    document.getElementById('result').textContent += '\nError: UserManager instance not found.';
-    return;
-  }
-
-  console.log('localStorage keys at callback:', Object.keys(window.localStorage));
-
-  // Complete the OIDC flow by processing the callback URL.
-  userManager.signinRedirectCallback(callbackUrl).then(user => {
-    console.log('User info received:', user);
-    document.getElementById('result').textContent = 'User info:\n' + JSON.stringify(user, null, 2);
-    // Save the access token for later API calls.
-    accessToken = user.access_token;
-  }).catch(err => {
-    console.error('Error during signinRedirectCallback:', err);
-    document.getElementById('result').textContent = 'Error during signinRedirectCallback:\n' + err;
-  });
-});
-
-// New: Send API Request using the access token.
+// API Request: This part works the same in either mode.
 document.getElementById('sendRequestBtn').addEventListener('click', () => {
   const method = document.getElementById('requestMethod').value;
   const url = document.getElementById('requestUrl').value.trim();
@@ -106,13 +108,11 @@ document.getElementById('sendRequestBtn').addEventListener('click', () => {
     document.getElementById('apiResponse').textContent = 'Please enter a request URL.';
     return;
   }
-
   if (!accessToken) {
     document.getElementById('apiResponse').textContent = 'No access token available. Authenticate first.';
     return;
   }
 
-  // Prepare request options.
   const options = {
     method: method,
     headers: {
@@ -120,7 +120,6 @@ document.getElementById('sendRequestBtn').addEventListener('click', () => {
     }
   };
 
-  // If the method is POST, PUT, or PATCH and a body is provided, add JSON headers and body.
   if (['POST', 'PUT', 'PATCH'].includes(method.toUpperCase()) && bodyText) {
     options.headers['Content-Type'] = 'application/json';
     try {
@@ -131,7 +130,6 @@ document.getElementById('sendRequestBtn').addEventListener('click', () => {
     }
   }
 
-  // Call the API endpoint.
   fetch(url, options)
     .then(async (response) => {
       const text = await response.text();
